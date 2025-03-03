@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photobooth</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+      background: radial-gradient(circle at center, #ff99b280 20%, #fff0f5e6 40%, snow 60%);
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 5px;
+    }
+    p {
+      color: #555;
+      margin-bottom: 15px;
+    }
+    .main-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .left-panel, .right-panel {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .left-panel {
+      flex: 1 1 640px;
+      max-width: 680px;
+    }
+    .right-panel {
+      flex: 1 1 300px;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    video {
+      width: 640px;
+      height: 480px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      background: #000;
+    }
+    .controls, .filters, .border-options, .layout-options {
+      margin: 10px 0;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      transition: background 0.3s;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    select {
+      padding: 8px;
+      font-size: 1em;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin: 5px;
+    }
+    .filters label, .border-options label {
+      margin-right: 10px;
+      font-size: 0.9em;
+      color: #333;
+    }
+    .photos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .photos img {
+      border-radius: 5px;
+    }
+    /* 最终拼贴照片预览样式 */
+    .collage-preview {
+      max-width: 400px;
+      margin-top: 10px;
+    }
+    .countdown {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 5em;
+      color: #007bff;
+      font-weight: bold;
+      animation: fadeOut 1s ease-in-out;
+      pointer-events: none;
+    }
+    @keyframes fadeOut {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0.5); }
+    }
+    .layout-options {
+      display: none;
+      flex-direction: row;
+      gap: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Start Capture :)</h1>
+  <p>Choose a filter before starting capture!</p>
+  <div class="main-container">
+    <!-- 左侧：取景和拍摄控制 -->
+    <div class="left-panel">
+      <div class="filters">
+        <label><input type="radio" name="filter" value="none" checked> No Filter</label>
+        <label><input type="radio" name="filter" value="grayscale"> Grayscale</label>
+        <label><input type="radio" name="filter" value="sepia"> Sepia</label>
+        <label><input type="radio" name="filter" value="vintage"> Vintage</label>
+        <label><input type="radio" name="filter" value="soft"> Soft</label>
+        <label><input type="radio" name="filter" value="cool"> Cool</label>
+        <label><input type="radio" name="filter" value="warm"> Warm</label>
+        <label><input type="radio" name="filter" value="lomo"> Lomo</label>
+        <label><input type="radio" name="filter" value="pop"> Pop</label>
+      </div>
+      <div class="border-options">
+        <label>Border Style:
+          <select id="borderStyle">
+            <option value="thin">Thin Border</option>
+            <option value="thick">Thick Border</option>
+            <option value="3d">3D Border</option>
+          </select>
+        </label>
+        <label>Border Color:
+          <select id="borderColor">
+            <option value="white">White</option>
+            <option value="black">Black</option>
+            <option value="pink">Pink</option>
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="yellow">Yellow</option>
+            <option value="purple">Purple</option>
+            <option value="maroon">Maroon</option>
+            <option value="burgundy">Burgundy</option>
+            <option value="gradient-blue">Gradient Blue</option>
+            <option value="gradient-purple">Gradient Purple</option>
+            <option value="gradient-orange">Gradient Orange</option>
+            <option value="gradient-rainbow">Gradient Rainbow</option>
+          </select>
+        </label>
+      </div>
+      <video id="video" autoplay></video>
+      <button id="capture">Start Capture</button>
+    </div>
+    <!-- 右侧：拍摄预览和拼贴选项 -->
+    <div class="right-panel">
+      <div class="photos"></div>
+      <div class="layout-options">
+        <p>Choose Layout:</p>
+        <button id="layout-2x2">2x2 Grid</button>
+        <button id="layout-1x4">1x4 Strip</button>
+      </div>
+      <button id="download" style="display:none;">Download Photo Strip</button>
+    </div>
+  </div>
+  <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const captureButton = document.getElementById('capture');
+    const downloadButton = document.getElementById('download');
+    const layoutOptions = document.querySelector('.layout-options');
+    const photosContainer = document.querySelector('.photos');
+    const borderColorSelect = document.getElementById('borderColor');
+    const borderStyleSelect = document.getElementById('borderStyle');
+    let filter = "none";
+    let borderColor = borderColorSelect.value;
+    let borderStyle = borderStyleSelect.value;
+    let images = [];
+
+    // 监听边框选项变化
+    borderColorSelect.addEventListener('change', () => {
+      borderColor = borderColorSelect.value;
+    });
+    borderStyleSelect.addEventListener('change', () => {
+      borderStyle = borderStyleSelect.value;
+    });
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => { console.error("无法访问摄像头: ", err); });
+
+    document.querySelectorAll('input[name="filter"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        filter = this.value;
+        video.style.filter = getFilterCSS(filter);
+      });
+    });
+
+    function getFilterCSS(filter) {
+      switch (filter) {
+        case "grayscale": return "grayscale(100%)";
+        case "sepia": return "sepia(100%)";
+        case "vintage": return "contrast(1.2) saturate(0.8) sepia(50%)";
+        case "soft": return "blur(2px)";
+        case "cool": return "contrast(1.1) saturate(1.5) hue-rotate(180deg)";
+        case "warm": return "contrast(1.1) saturate(1.2) sepia(20%)";
+        case "lomo": return "contrast(1.3) saturate(1.8) brightness(0.9)";
+        case "pop": return "saturate(2)";
+        default: return "none";
+      }
+    }
+
+    async function countdownAndCapture() {
+      images = [];
+      photosContainer.innerHTML = '';
+      layoutOptions.style.display = 'none';
+      downloadButton.style.display = 'none';
+      // 拍4张照片，每张前有3秒倒计时
+      for (let i = 0; i < 4; i++) {
+        await countdown(3);
+        // 将滤镜效果应用到canvas上
+        ctx.filter = getFilterCSS(filter);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        let img = new Image();
+        img.src = canvas.toDataURL('image/png');
+        // 设置预览边框样式
+        let previewThickness = 5;
+        if (borderStyle === "thick") previewThickness = 15;
+        else if (borderStyle === "3d") previewThickness = 10;
+        let previewColor = borderColor;
+        if (borderColor.startsWith("gradient")) {
+          previewColor = borderColor.split("-")[1];
+        }
+        img.style.border = previewThickness + "px solid " + previewColor;
+        if (borderStyle === "3d") {
+          img.style.boxShadow = "4px 4px 8px rgba(0,0,0,0.5)";
+        }
+        images.push(img);
+        photosContainer.appendChild(img);
+      }
+      // 拍摄完成后显示布局选项
+      layoutOptions.style.display = 'flex';
+    }
+
+    function countdown(seconds) {
+      return new Promise(resolve => {
+        const countdownEl = document.createElement('div');
+        countdownEl.className = 'countdown';
+        document.body.appendChild(countdownEl);
+        let current = seconds;
+        const interval = setInterval(() => {
+          countdownEl.innerText = current;
+          current--;
+          if (current < 0) {
+            clearInterval(interval);
+            countdownEl.remove();
+            resolve();
+          }
+        }, 1000);
+      });
+    }
+
+    function createCollage(layout) {
+      let collageCanvas = document.createElement('canvas');
+      let collageCtx = collageCanvas.getContext('2d');
+      // 使用原始拍摄尺寸 640x480
+      const photoWidth = canvas.width;
+      const photoHeight = canvas.height;
+
+      if (layout === '2x2') {
+        collageCanvas.width = photoWidth * 2;    // 1280
+        collageCanvas.height = photoHeight * 2;    // 960
+        images.forEach((img, index) => {
+          let x = (index % 2) * photoWidth;
+          let y = Math.floor(index / 2) * photoHeight;
+          collageCtx.drawImage(img, x, y, photoWidth, photoHeight);
+          // 绘制边框
+          let thickness = 5;
+          if (borderStyle === "thick") thickness = 15;
+          else if (borderStyle === "3d") thickness = 10;
+          collageCtx.lineWidth = thickness;
+          if (borderStyle === "3d") {
+            collageCtx.shadowColor = "rgba(0,0,0,0.5)";
+            collageCtx.shadowBlur = 10;
+          }
+          if (borderColor.startsWith("gradient")) {
+            let grad = collageCtx.createLinearGradient(x, y, x + photoWidth, y + photoHeight);
+            if (borderColor === "gradient-blue") {
+              grad.addColorStop(0, "blue");
+              grad.addColorStop(1, "lightblue");
+            } else if (borderColor === "gradient-purple") {
+              grad.addColorStop(0, "purple");
+              grad.addColorStop(1, "violet");
+            } else if (borderColor === "gradient-orange") {
+              grad.addColorStop(0, "orange");
+              grad.addColorStop(1, "gold");
+            } else if (borderColor === "gradient-rainbow") {
+              grad.addColorStop(0, "red");
+              grad.addColorStop(0.2, "orange");
+              grad.addColorStop(0.4, "yellow");
+              grad.addColorStop(0.6, "green");
+              grad.addColorStop(0.8, "blue");
+              grad.addColorStop(1, "violet");
+            }
+            collageCtx.strokeStyle = grad;
+          } else {
+            collageCtx.strokeStyle = borderColor;
+          }
+          collageCtx.strokeRect(x, y, photoWidth, photoHeight);
+          if (borderStyle === "3d") {
+            collageCtx.shadowColor = "transparent";
+          }
+        });
+      } else if (layout === '1x4') {
+        collageCanvas.width = photoWidth;            // 640
+        collageCanvas.height = photoHeight * 4;        // 1920
+        images.forEach((img, index) => {
+          let y = index * photoHeight;
+          collageCtx.drawImage(img, 0, y, photoWidth, photoHeight);
+          let thickness = 5;
+          if (borderStyle === "thick") thickness = 15;
+          else if (borderStyle === "3d") thickness = 10;
+          collageCtx.lineWidth = thickness;
+          if (borderStyle === "3d") {
+            collageCtx.shadowColor = "rgba(0,0,0,0.5)";
+            collageCtx.shadowBlur = 10;
+          }
+          if (borderColor.startsWith("gradient")) {
+            let grad = collageCtx.createLinearGradient(0, y, photoWidth, y + photoHeight);
+            if (borderColor === "gradient-blue") {
+              grad.addColorStop(0, "blue");
+              grad.addColorStop(1, "lightblue");
+            } else if (borderColor === "gradient-purple") {
+              grad.addColorStop(0, "purple");
+              grad.addColorStop(1, "violet");
+            } else if (borderColor === "gradient-orange") {
+              grad.addColorStop(0, "orange");
+              grad.addColorStop(1, "gold");
+            } else if (borderColor === "gradient-rainbow") {
+              grad.addColorStop(0, "red");
+              grad.addColorStop(0.2, "orange");
+              grad.addColorStop(0.4, "yellow");
+              grad.addColorStop(0.6, "green");
+              grad.addColorStop(0.8, "blue");
+              grad.addColorStop(1, "violet");
+            }
+            collageCtx.strokeStyle = grad;
+          } else {
+            collageCtx.strokeStyle = borderColor;
+          }
+          collageCtx.strokeRect(0, y, photoWidth, photoHeight);
+          if (borderStyle === "3d") {
+            collageCtx.shadowColor = "transparent";
+          }
+        });
+      }
+      const collageImage = new Image();
+      collageImage.src = collageCanvas.toDataURL('image/png');
+      // 为了更方便查看，预览时缩小最终拼贴照片\n      collageImage.className = 'collage-preview';\n      photosContainer.innerHTML = '';\n      photosContainer.appendChild(collageImage);\n      downloadButton.style.display = 'block';\n      downloadButton.onclick = () => {\n        const link = document.createElement('a');\n        link.href = collageImage.src;\n        link.download = 'collage.png';\n        link.click();\n      };\n    }\n\n    document.getElementById('layout-2x2').addEventListener('click', () => createCollage('2x2'));\n    document.getElementById('layout-1x4').addEventListener('click', () => createCollage('1x4'));\n    captureButton.addEventListener('click', countdownAndCapture);\n  </script>\n</body>\n</html>\n"}]}
