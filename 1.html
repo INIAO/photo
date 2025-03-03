@@ -11,39 +11,55 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background-color: #f0f0f0;
+            background-color: #f8f9fa;
             font-family: Arial, sans-serif;
             text-align: center;
         }
-        video, canvas {
+        h1 {
+            color: #333;
+        }
+        video {
             display: block;
             margin: 10px auto;
             border-radius: 10px;
         }
-        .controls {
-            margin: 10px 0;
+        .controls, .filters, .photos {
+            margin: 10px;
         }
         button {
-            padding: 10px 15px;
+            padding: 12px 20px;
             font-size: 1em;
             cursor: pointer;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             background-color: #007bff;
             color: white;
+            transition: 0.3s;
         }
         button:hover {
             background-color: #0056b3;
         }
-        .filters, .photos, .frame-options, .sticker-options {
-            margin: 10px;
+        .photos {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
         }
         .photos img {
             width: 150px;
             height: 150px;
-            margin: 5px;
             border-radius: 5px;
             border: 2px solid #ccc;
+        }
+        .countdown {
+            position: absolute;
+            font-size: 5em;
+            color: #007bff;
+            font-weight: bold;
+            animation: fadeOut 1s ease-in-out;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.5); }
         }
     </style>
 </head>
@@ -57,35 +73,10 @@
         <label><input type="radio" name="filter" value="vintage"> Vintage</label>
         <label><input type="radio" name="filter" value="soft"> Soft</label>
     </div>
-    <p>Customize your photo strip</p>
-    <div class="frame-options">
-        <label>Frame Color:</label>
-        <select id="frameColor">
-            <option value="white">White</option>
-            <option value="black">Black</option>
-            <option value="pink">Pink</option>
-            <option value="green">Green</option>
-            <option value="blue">Blue</option>
-            <option value="yellow">Yellow</option>
-            <option value="purple">Purple</option>
-            <option value="maroon">Maroon</option>
-            <option value="burgundy">Burgundy</option>
-        </select>
-    </div>
-    <div class="sticker-options">
-        <label>Stickers:</label>
-        <select id="sticker">
-            <option value="none">No Stickers</option>
-            <option value="girlypop">Girlypop</option>
-            <option value="cute">Cute</option>
-            <option value="mofusand">Mofusand</option>
-            <option value="shinchan">Shin Chan</option>
-        </select>
-    </div>
     <video id="video" width="640" height="480" autoplay></video>
     <button id="capture">Start Capture</button>
     <div class="photos"></div>
-    <button id="download" style="display:none;">Download Photo Strip</button>
+    <button id="download" style="display:none;">Download Collage</button>
     <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
     <script>
         const video = document.getElementById('video');
@@ -94,26 +85,19 @@
         const captureButton = document.getElementById('capture');
         const downloadButton = document.getElementById('download');
         const photosContainer = document.querySelector('.photos');
-        const frameColorSelect = document.getElementById('frameColor');
-        const stickerSelect = document.getElementById('sticker');
         let filter = "none";
-        let frameColor = "white";
-        let sticker = "none";
         let images = [];
 
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => { video.srcObject = stream; })
             .catch(err => { console.error("无法访问摄像头: ", err); });
-
+        
         document.querySelectorAll('input[name="filter"]').forEach(radio => {
             radio.addEventListener('change', function() {
                 filter = this.value;
                 video.style.filter = getFilterCSS(filter);
             });
         });
-        
-        frameColorSelect.addEventListener('change', () => frameColor = frameColorSelect.value);
-        stickerSelect.addEventListener('change', () => sticker = stickerSelect.value);
 
         function getFilterCSS(filter) {
             switch (filter) {
@@ -125,25 +109,63 @@
             }
         }
 
-        captureButton.addEventListener('click', async () => {
+        async function countdownAndCapture() {
             images = [];
             photosContainer.innerHTML = '';
-            for (let i = 3; i > 0; i--) {
-                alert(i);
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
             for (let i = 0; i < 4; i++) {
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                ctx.fillStyle = frameColor;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(video, 20, 20, canvas.width - 40, canvas.height - 40);
+                await countdown(3);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 let img = new Image();
                 img.src = canvas.toDataURL('image/png');
+                img.classList.add('photo');
                 images.push(img);
                 photosContainer.appendChild(img);
             }
             createCollage();
-        });
+        }
+
+        function countdown(seconds) {
+            return new Promise(resolve => {
+                const countdownEl = document.createElement('div');
+                countdownEl.className = 'countdown';
+                document.body.appendChild(countdownEl);
+                let current = seconds;
+                const interval = setInterval(() => {
+                    countdownEl.innerText = current;
+                    current--;
+                    if (current < 0) {
+                        clearInterval(interval);
+                        countdownEl.remove();
+                        resolve();
+                    }
+                }, 1000);
+            });
+        }
+
+        function createCollage() {
+            const collageCanvas = document.createElement('canvas');
+            const ctx = collageCanvas.getContext('2d');
+            collageCanvas.width = 640;
+            collageCanvas.height = 640;
+            
+            images.forEach((img, index) => {
+                let x = (index % 2) * 320;
+                let y = Math.floor(index / 2) * 320;
+                ctx.drawImage(img, x, y, 320, 320);
+            });
+            const collageImage = new Image();
+            collageImage.src = collageCanvas.toDataURL('image/png');
+            photosContainer.appendChild(collageImage);
+            downloadButton.style.display = 'block';
+            downloadButton.onclick = () => {
+                const link = document.createElement('a');
+                link.href = collageImage.src;
+                link.download = 'collage.png';
+                link.click();
+            };
+        }
+
+        captureButton.addEventListener('click', countdownAndCapture);
     </script>
 </body>
 </html>
