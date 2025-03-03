@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎来到照相亭</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .welcome-container {
+            align-items: center;
+            background: radial-gradient(circle at center, #ff99b280 20%, #fff0f5e6 40%, snow 60%);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            justify-content: center;
+            padding: 0 20px;
+            text-align: center;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            font-size: 1.2em;
+            color: #666;
+            max-width: 600px;
+        }
+        #startButton {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #startButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container">
+        <h1>Welcome!</h1>
+        <p>You have 3 seconds for each shot – no retakes!<br>
+           This photobooth captures 4 pictures in a row, so strike your best pose and have fun!<br>
+           After the session, download your digital copy and share the fun!
+        </p>
+        <button id="startButton">Start</button>
+    </div>
+    <script>
+        document.getElementById('startButton').addEventListener('click', function() {
+            window.location.href = 'photobooth.html'; // 跳转到拍照页面
+        });
+    </script>
+</body>
+</html>
