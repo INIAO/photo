@@ -11,7 +11,7 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background-color: #f8f9fa;
+            background: radial-gradient(circle at center, #ff99b280 20%, #fff0f5e6 40%, snow 60%);
             font-family: Arial, sans-serif;
             text-align: center;
         }
@@ -23,7 +23,7 @@
             margin: 10px auto;
             border-radius: 10px;
         }
-        .controls, .filters, .photos {
+        .controls, .filters, .photos, .options {
             margin: 10px;
         }
         button {
@@ -35,6 +35,7 @@
             background-color: #007bff;
             color: white;
             transition: 0.3s;
+            margin: 5px;
         }
         button:hover {
             background-color: #0056b3;
@@ -76,7 +77,12 @@
     <video id="video" width="640" height="480" autoplay></video>
     <button id="capture">Start Capture</button>
     <div class="photos"></div>
-    <button id="download" style="display:none;">Download Collage</button>
+    <div class="options" style="display:none;">
+        <p>Choose Layout:</p>
+        <button id="layout-2x2">2x2 Grid</button>
+        <button id="layout-1x4">1x4 Strip</button>
+    </div>
+    <button id="download" style="display:none;">Download Photo Strip</button>
     <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
     <script>
         const video = document.getElementById('video');
@@ -84,6 +90,7 @@
         const ctx = canvas.getContext('2d');
         const captureButton = document.getElementById('capture');
         const downloadButton = document.getElementById('download');
+        const layoutOptions = document.querySelector('.options');
         const photosContainer = document.querySelector('.photos');
         let filter = "none";
         let images = [];
@@ -121,7 +128,7 @@
                 images.push(img);
                 photosContainer.appendChild(img);
             }
-            createCollage();
+            layoutOptions.style.display = 'block';
         }
 
         function countdown(seconds) {
@@ -142,29 +149,33 @@
             });
         }
 
-        function createCollage() {
+        function createCollage(layout) {
             const collageCanvas = document.createElement('canvas');
             const ctx = collageCanvas.getContext('2d');
-            collageCanvas.width = 640;
-            collageCanvas.height = 640;
-            
-            images.forEach((img, index) => {
-                let x = (index % 2) * 320;
-                let y = Math.floor(index / 2) * 320;
-                ctx.drawImage(img, x, y, 320, 320);
-            });
+            if (layout === '2x2') {
+                collageCanvas.width = 640;
+                collageCanvas.height = 640;
+                images.forEach((img, index) => {
+                    let x = (index % 2) * 320;
+                    let y = Math.floor(index / 2) * 320;
+                    ctx.drawImage(img, x, y, 320, 320);
+                });
+            } else {
+                collageCanvas.width = 640;
+                collageCanvas.height = 1280;
+                images.forEach((img, index) => {
+                    let y = index * 320;
+                    ctx.drawImage(img, 0, y, 640, 320);
+                });
+            }
             const collageImage = new Image();
             collageImage.src = collageCanvas.toDataURL('image/png');
             photosContainer.appendChild(collageImage);
             downloadButton.style.display = 'block';
-            downloadButton.onclick = () => {
-                const link = document.createElement('a');
-                link.href = collageImage.src;
-                link.download = 'collage.png';
-                link.click();
-            };
         }
 
+        document.getElementById('layout-2x2').addEventListener('click', () => createCollage('2x2'));
+        document.getElementById('layout-1x4').addEventListener('click', () => createCollage('1x4'));
         captureButton.addEventListener('click', countdownAndCapture);
     </script>
 </body>
