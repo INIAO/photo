@@ -1,182 +1,249 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photobooth</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background: radial-gradient(circle at center, #ff99b280 20%, #fff0f5e6 40%, snow 60%);
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        h1 {
-            color: #333;
-        }
-        video {
-            display: block;
-            margin: 10px auto;
-            border-radius: 10px;
-        }
-        .controls, .filters, .photos, .options {
-            margin: 10px;
-        }
-        button {
-            padding: 12px 20px;
-            font-size: 1em;
-            cursor: pointer;
-            border: none;
-            border-radius: 8px;
-            background-color: #007bff;
-            color: white;
-            transition: 0.3s;
-            margin: 5px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .photos {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .photos img {
-            width: 150px;
-            height: 150px;
-            border-radius: 5px;
-            border: 2px solid #ccc;
-        }
-        .countdown {
-            position: absolute;
-            font-size: 5em;
-            color: #007bff;
-            font-weight: bold;
-            animation: fadeOut 1s ease-in-out;
-        }
-        @keyframes fadeOut {
-            0% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(0.5); }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photobooth</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: radial-gradient(circle at center, #ff99b280 20%, #fff0f5e6 40%, snow 60%);
+      font-family: Arial, sans-serif;
+      text-align: center;
+      position: relative;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 5px;
+    }
+    p {
+      margin: 5px 0 15px;
+      color: #555;
+    }
+    video {
+      display: block;
+      margin: 10px auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .controls, .filters, .border-options, .photos, .options {
+      margin: 10px;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      transition: 0.3s;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .photos {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .photos img {
+      max-width: 200px;
+      max-height: 150px;
+      border-radius: 5px;
+      border: 10px solid white;
+    }
+    .countdown {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 5em;
+      color: #007bff;
+      font-weight: bold;
+      animation: fadeOut 1s ease-in-out;
+      pointer-events: none;
+    }
+    @keyframes fadeOut {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0.5); }
+    }
+    select {
+      padding: 8px;
+      font-size: 1em;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-top: 5px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Start Capture :)</h1>
-    <p>Choose a filter before starting capture!</p>
-    <div class="filters">
-        <label><input type="radio" name="filter" value="none" checked> No Filter</label>
-        <label><input type="radio" name="filter" value="grayscale"> Grayscale</label>
-        <label><input type="radio" name="filter" value="sepia"> Sepia</label>
-        <label><input type="radio" name="filter" value="vintage"> Vintage</label>
-        <label><input type="radio" name="filter" value="soft"> Soft</label>
-    </div>
-    <video id="video" width="640" height="480" autoplay></video>
-    <button id="capture">Start Capture</button>
-    <div class="photos"></div>
-    <div class="options" style="display:none;">
-        <p>Choose Layout:</p>
-        <button id="layout-2x2">2x2 Grid</button>
-        <button id="layout-1x4">1x4 Strip</button>
-    </div>
-    <button id="download" style="display:none;">Download Photo Strip</button>
-    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const captureButton = document.getElementById('capture');
-        const downloadButton = document.getElementById('download');
-        const layoutOptions = document.querySelector('.options');
-        const photosContainer = document.querySelector('.photos');
-        let filter = "none";
-        let images = [];
+  <h1>Start Capture :)</h1>
+  <p>Choose a filter before starting capture!</p>
+  <div class="filters">
+    <label><input type="radio" name="filter" value="none" checked> No Filter</label>
+    <label><input type="radio" name="filter" value="grayscale"> Grayscale</label>
+    <label><input type="radio" name="filter" value="sepia"> Sepia</label>
+    <label><input type="radio" name="filter" value="vintage"> Vintage</label>
+    <label><input type="radio" name="filter" value="soft"> Soft</label>
+  </div>
+  <div class="border-options">
+    <p>Choose Border Color:</p>
+    <select id="borderColor">
+      <option value="white">White</option>
+      <option value="black">Black</option>
+      <option value="pink">Pink</option>
+      <option value="green">Green</option>
+      <option value="blue">Blue</option>
+      <option value="yellow">Yellow</option>
+      <option value="purple">Purple</option>
+      <option value="maroon">Maroon</option>
+      <option value="burgundy">Burgundy</option>
+    </select>
+  </div>
+  <video id="video" width="640" height="480" autoplay></video>
+  <button id="capture">Start Capture</button>
+  <div class="photos"></div>
+  <div class="options" style="display:none;">
+    <p>Choose Layout:</p>
+    <button id="layout-2x2">2x2 Grid</button>
+    <button id="layout-1x4">1x4 Strip</button>
+  </div>
+  <button id="download" style="display:none;">Download Photo Strip</button>
+  <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const captureButton = document.getElementById('capture');
+    const downloadButton = document.getElementById('download');
+    const layoutOptions = document.querySelector('.options');
+    const photosContainer = document.querySelector('.photos');
+    const borderColorSelect = document.getElementById('borderColor');
+    let filter = "none";
+    let borderColor = borderColorSelect.value;
+    let images = [];
 
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => { video.srcObject = stream; })
-            .catch(err => { console.error("无法访问摄像头: ", err); });
-        
-        document.querySelectorAll('input[name="filter"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                filter = this.value;
-                video.style.filter = getFilterCSS(filter);
-            });
+    // 更新边框颜色变量
+    borderColorSelect.addEventListener('change', () => {
+      borderColor = borderColorSelect.value;
+    });
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => { console.error("无法访问摄像头: ", err); });
+
+    document.querySelectorAll('input[name="filter"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        filter = this.value;
+        video.style.filter = getFilterCSS(filter);
+      });
+    });
+
+    function getFilterCSS(filter) {
+      switch (filter) {
+        case "grayscale": return "grayscale(100%)";
+        case "sepia": return "sepia(100%)";
+        case "vintage": return "contrast(1.2) saturate(0.8) sepia(50%)";
+        case "soft": return "blur(2px)";
+        default: return "none";
+      }
+    }
+
+    async function countdownAndCapture() {
+      images = [];
+      photosContainer.innerHTML = '';
+      layoutOptions.style.display = 'none';
+      downloadButton.style.display = 'none';
+      for (let i = 0; i < 4; i++) {
+        await countdown(3);
+        // 将滤镜应用到canvas绘制上
+        ctx.filter = getFilterCSS(filter);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        let img = new Image();
+        img.src = canvas.toDataURL('image/png');
+        // 为预览图片添加边框效果
+        img.style.border = '10px solid ' + borderColor;
+        images.push(img);
+        photosContainer.appendChild(img);
+      }
+      // 拍摄完成后显示布局选项
+      layoutOptions.style.display = 'block';
+    }
+
+    function countdown(seconds) {
+      return new Promise(resolve => {
+        const countdownEl = document.createElement('div');
+        countdownEl.className = 'countdown';
+        document.body.appendChild(countdownEl);
+        let current = seconds;
+        const interval = setInterval(() => {
+          countdownEl.innerText = current;
+          current--;
+          if (current < 0) {
+            clearInterval(interval);
+            countdownEl.remove();
+            resolve();
+          }
+        }, 1000);
+      });
+    }
+
+    function createCollage(layout) {
+      let collageCanvas = document.createElement('canvas');
+      let collageCtx = collageCanvas.getContext('2d');
+      // 使用原始拍摄比例 640x480
+      const photoWidth = canvas.width;
+      const photoHeight = canvas.height;
+
+      if (layout === '2x2') {
+        collageCanvas.width = photoWidth * 2;    // 1280
+        collageCanvas.height = photoHeight * 2;  // 960
+        images.forEach((img, index) => {
+          let x = (index % 2) * photoWidth;
+          let y = Math.floor(index / 2) * photoHeight;
+          collageCtx.drawImage(img, x, y, photoWidth, photoHeight);
+          // 绘制边框效果
+          collageCtx.lineWidth = 10;
+          collageCtx.strokeStyle = borderColor;
+          collageCtx.strokeRect(x, y, photoWidth, photoHeight);
         });
+      } else if (layout === '1x4') {
+        collageCanvas.width = photoWidth;            // 640
+        collageCanvas.height = photoHeight * 4;       // 1920
+        images.forEach((img, index) => {
+          let y = index * photoHeight;
+          collageCtx.drawImage(img, 0, y, photoWidth, photoHeight);
+          collageCtx.lineWidth = 10;
+          collageCtx.strokeStyle = borderColor;
+          collageCtx.strokeRect(0, y, photoWidth, photoHeight);
+        });
+      }
+      const collageImage = new Image();
+      collageImage.src = collageCanvas.toDataURL('image/png');
+      photosContainer.innerHTML = '';
+      photosContainer.appendChild(collageImage);
+      downloadButton.style.display = 'block';
+      downloadButton.onclick = () => {
+        const link = document.createElement('a');
+        link.href = collageImage.src;
+        link.download = 'collage.png';
+        link.click();
+      };
+    }
 
-        function getFilterCSS(filter) {
-            switch (filter) {
-                case "grayscale": return "grayscale(100%)";
-                case "sepia": return "sepia(100%)";
-                case "vintage": return "contrast(1.2) saturate(0.8) sepia(50%)";
-                case "soft": return "blur(2px)";
-                default: return "none";
-            }
-        }
-
-        async function countdownAndCapture() {
-            images = [];
-            photosContainer.innerHTML = '';
-            for (let i = 0; i < 4; i++) {
-                await countdown(3);
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                let img = new Image();
-                img.src = canvas.toDataURL('image/png');
-                img.classList.add('photo');
-                images.push(img);
-                photosContainer.appendChild(img);
-            }
-            layoutOptions.style.display = 'block';
-        }
-
-        function countdown(seconds) {
-            return new Promise(resolve => {
-                const countdownEl = document.createElement('div');
-                countdownEl.className = 'countdown';
-                document.body.appendChild(countdownEl);
-                let current = seconds;
-                const interval = setInterval(() => {
-                    countdownEl.innerText = current;
-                    current--;
-                    if (current < 0) {
-                        clearInterval(interval);
-                        countdownEl.remove();
-                        resolve();
-                    }
-                }, 1000);
-            });
-        }
-
-        function createCollage(layout) {
-            const collageCanvas = document.createElement('canvas');
-            const ctx = collageCanvas.getContext('2d');
-            if (layout === '2x2') {
-                collageCanvas.width = 640;
-                collageCanvas.height = 640;
-                images.forEach((img, index) => {
-                    let x = (index % 2) * 320;
-                    let y = Math.floor(index / 2) * 320;
-                    ctx.drawImage(img, x, y, 320, 320);
-                });
-            } else {
-                collageCanvas.width = 640;
-                collageCanvas.height = 1280;
-                images.forEach((img, index) => {
-                    let y = index * 320;
-                    ctx.drawImage(img, 0, y, 640, 320);
-                });
-            }
-            const collageImage = new Image();
-            collageImage.src = collageCanvas.toDataURL('image/png');
-            photosContainer.appendChild(collageImage);
-            downloadButton.style.display = 'block';
-        }
-
-        document.getElementById('layout-2x2').addEventListener('click', () => createCollage('2x2'));
-        document.getElementById('layout-1x4').addEventListener('click', () => createCollage('1x4'));
-        captureButton.addEventListener('click', countdownAndCapture);
-    </script>
+    document.getElementById('layout-2x2').addEventListener('click', () => createCollage('2x2'));
+    document.getElementById('layout-1x4').addEventListener('click', () => createCollage('1x4'));
+    captureButton.addEventListener('click', countdownAndCapture);
+  </script>
 </body>
 </html>
