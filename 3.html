@@ -51,8 +51,10 @@
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       background: #000;
+      /* 初始边框效果：默认thin白色 */
+      border: 5px solid white;
     }
-    .controls, .filters, .border-options, .layout-options {
+    .controls, .border-options, .layout-options {
       margin: 10px 0;
     }
     button {
@@ -69,10 +71,6 @@
     button:hover {
       background-color: #0056b3;
     }
-    .filter-btn.active {
-      background-color: #0056b3;
-      box-shadow: 0 0 5px #0056b3;
-    }
     select {
       padding: 8px;
       font-size: 1em;
@@ -80,8 +78,24 @@
       border: 1px solid #ccc;
       margin: 5px;
     }
+    .filters {
+      margin: 10px 0;
+    }
     .filters button {
-      margin: 5px;
+      background-color: white;
+      color: black;
+      border: 1px solid #ccc;
+      box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+      padding: 8px 12px;
+      font-size: 0.9em;
+      border-radius: 4px;
+      margin: 3px;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    .filters button.active {
+      background-color: #007bff;
+      color: white;
+      box-shadow: 0 0 5px #007bff;
     }
     .border-options label {
       margin-right: 10px;
@@ -97,7 +111,7 @@
     }
     .photos img {
       width: 150px;
-      height: 150px;
+      height: auto;
       border-radius: 5px;
       border: 2px solid #ccc;
     }
@@ -197,19 +211,42 @@
     const borderColorSelect = document.getElementById('borderColor');
     const borderStyleSelect = document.getElementById('borderStyle');
     const filterButtons = document.querySelectorAll('.filter-btn');
-    
+
     let filter = "none";
     let borderColor = borderColorSelect.value;
     let borderStyle = borderStyleSelect.value;
     let images = [];
 
-    // 监听边框选项变化
+    // 更新取景框（video）的边框效果
+    function updateVideoBorder() {
+      let thickness = 5;
+      if (borderStyle === "thick") thickness = 15;
+      else if (borderStyle === "3d") thickness = 10;
+      let previewColor = borderColor;
+      if (borderColor.startsWith("gradient")) {
+        previewColor = borderColor.split("-")[1];
+      }
+      video.style.border = thickness + "px solid " + previewColor;
+      if (borderStyle === "3d") {
+        video.style.boxShadow = "4px 4px 8px rgba(0,0,0,0.5)";
+      } else {
+        video.style.boxShadow = "none";
+      }
+    }
+
+    // 监听边框选项变化，更新变量和取景框效果
     borderColorSelect.addEventListener('change', () => {
       borderColor = borderColorSelect.value;
+      updateVideoBorder();
     });
     borderStyleSelect.addEventListener('change', () => {
       borderStyle = borderStyleSelect.value;
+      updateVideoBorder();
     });
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => { console.error("无法访问摄像头: ", err); });
 
     // 滤镜按钮点击事件，更新视频滤镜并调整按钮反馈
     filterButtons.forEach(btn => {
@@ -220,10 +257,6 @@
         video.style.filter = getFilterCSS(filter);
       });
     });
-
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => { video.srcObject = stream; })
-      .catch(err => { console.error("无法访问摄像头: ", err); });
 
     function getFilterCSS(filter) {
       switch (filter) {
@@ -246,14 +279,14 @@
       // 拍4张照片，每张前有3秒倒计时
       for (let i = 0; i < 4; i++) {
         await countdown(3);
-        // 将滤镜效果应用到canvas上
+        // 将滤镜效果应用到 canvas 上
         ctx.filter = getFilterCSS(filter);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         let img = new Image();
         img.src = canvas.toDataURL('image/png');
-        // 使用之前预览图片尺寸：150x150
+        // 预览图片保持取景框比例，缩小为宽度150px
         img.style.width = "150px";
-        img.style.height = "150px";
+        img.style.height = "auto";
         // 设置预览边框样式
         let previewThickness = 5;
         if (borderStyle === "thick") previewThickness = 15;
@@ -387,7 +420,7 @@
       }
       const collageImage = new Image();
       collageImage.src = collageCanvas.toDataURL('image/png');
-      // 为了更方便查看，预览时放大最终拼贴照片
+      // 放大显示最终拼贴照片预览
       collageImage.className = 'collage-preview';
       photosContainer.innerHTML = '';
       photosContainer.appendChild(collageImage);
