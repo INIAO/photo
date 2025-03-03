@@ -233,7 +233,7 @@
       // 拍4张照片，每张前有3秒倒计时
       for (let i = 0; i < 4; i++) {
         await countdown(3);
-        // 将滤镜效果应用到canvas上
+        // 将滤镜效果应用到 canvas 上
         ctx.filter = getFilterCSS(filter);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         let img = new Image();
@@ -371,4 +371,22 @@
       }
       const collageImage = new Image();
       collageImage.src = collageCanvas.toDataURL('image/png');
-      // 为了更方便查看，预览时缩小最终拼贴照片\n      collageImage.className = 'collage-preview';\n      photosContainer.innerHTML = '';\n      photosContainer.appendChild(collageImage);\n      downloadButton.style.display = 'block';\n      downloadButton.onclick = () => {\n        const link = document.createElement('a');\n        link.href = collageImage.src;\n        link.download = 'collage.png';\n        link.click();\n      };\n    }\n\n    document.getElementById('layout-2x2').addEventListener('click', () => createCollage('2x2'));\n    document.getElementById('layout-1x4').addEventListener('click', () => createCollage('1x4'));\n    captureButton.addEventListener('click', countdownAndCapture);\n  </script>\n</body>\n</html>\n"}]}
+      // 为了更方便查看，预览时缩小最终拼贴照片
+      collageImage.className = 'collage-preview';
+      photosContainer.innerHTML = '';
+      photosContainer.appendChild(collageImage);
+      downloadButton.style.display = 'block';
+      downloadButton.onclick = () => {
+        const link = document.createElement('a');
+        link.href = collageImage.src;
+        link.download = 'collage.png';
+        link.click();
+      };
+    }
+
+    document.getElementById('layout-2x2').addEventListener('click', () => createCollage('2x2'));
+    document.getElementById('layout-1x4').addEventListener('click', () => createCollage('1x4'));
+    captureButton.addEventListener('click', countdownAndCapture);
+  </script>
+</body>
+</html>
