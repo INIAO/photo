@@ -35,8 +35,15 @@
         button:hover {
             background-color: #0056b3;
         }
-        .filters {
+        .filters, .photos, .frame-options, .sticker-options {
             margin: 10px;
+        }
+        .photos img {
+            width: 150px;
+            height: 150px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 2px solid #ccc;
         }
     </style>
 </head>
@@ -50,28 +57,63 @@
         <label><input type="radio" name="filter" value="vintage"> Vintage</label>
         <label><input type="radio" name="filter" value="soft"> Soft</label>
     </div>
+    <p>Customize your photo strip</p>
+    <div class="frame-options">
+        <label>Frame Color:</label>
+        <select id="frameColor">
+            <option value="white">White</option>
+            <option value="black">Black</option>
+            <option value="pink">Pink</option>
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="yellow">Yellow</option>
+            <option value="purple">Purple</option>
+            <option value="maroon">Maroon</option>
+            <option value="burgundy">Burgundy</option>
+        </select>
+    </div>
+    <div class="sticker-options">
+        <label>Stickers:</label>
+        <select id="sticker">
+            <option value="none">No Stickers</option>
+            <option value="girlypop">Girlypop</option>
+            <option value="cute">Cute</option>
+            <option value="mofusand">Mofusand</option>
+            <option value="shinchan">Shin Chan</option>
+        </select>
+    </div>
     <video id="video" width="640" height="480" autoplay></video>
     <button id="capture">Start Capture</button>
+    <div class="photos"></div>
+    <button id="download" style="display:none;">Download Photo Strip</button>
     <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const captureButton = document.getElementById('capture');
+        const downloadButton = document.getElementById('download');
+        const photosContainer = document.querySelector('.photos');
+        const frameColorSelect = document.getElementById('frameColor');
+        const stickerSelect = document.getElementById('sticker');
         let filter = "none";
+        let frameColor = "white";
+        let sticker = "none";
+        let images = [];
 
-        // 访问摄像头
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => { video.srcObject = stream; })
             .catch(err => { console.error("无法访问摄像头: ", err); });
-        
-        // 监听滤镜选择
+
         document.querySelectorAll('input[name="filter"]').forEach(radio => {
             radio.addEventListener('change', function() {
                 filter = this.value;
                 video.style.filter = getFilterCSS(filter);
             });
         });
+        
+        frameColorSelect.addEventListener('change', () => frameColor = frameColorSelect.value);
+        stickerSelect.addEventListener('change', () => sticker = stickerSelect.value);
 
         function getFilterCSS(filter) {
             switch (filter) {
@@ -84,32 +126,24 @@
         }
 
         captureButton.addEventListener('click', async () => {
-            captureButton.disabled = true;
-            let images = [];
-            for (let i = 0; i < 4; i++) { // 4连拍
-                await new Promise(resolve => setTimeout(resolve, 3000)); // 3秒间隔
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            images = [];
+            photosContainer.innerHTML = '';
+            for (let i = 3; i > 0; i--) {
+                alert(i);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            for (let i = 0; i < 4; i++) {
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                ctx.fillStyle = frameColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(video, 20, 20, canvas.width - 40, canvas.height - 40);
                 let img = new Image();
                 img.src = canvas.toDataURL('image/png');
                 images.push(img);
+                photosContainer.appendChild(img);
             }
-            createCollage(images);
-            captureButton.disabled = false;
+            createCollage();
         });
-
-        function createCollage(images) {
-            const collageCanvas = document.createElement('canvas');
-            const ctx = collageCanvas.getContext('2d');
-            collageCanvas.width = 640;
-            collageCanvas.height = 640;
-            
-            images.forEach((img, index) => {
-                let x = (index % 2) * 320;
-                let y = Math.floor(index / 2) * 320;
-                ctx.drawImage(img, x, y, 320, 320);
-            });
-            document.body.appendChild(collageCanvas);
-        }
     </script>
 </body>
 </html>
