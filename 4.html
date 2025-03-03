@@ -141,14 +141,11 @@
       gap: 10px;
       margin-top: 10px;
     }
-    .language-options {
-      margin-top: 10px;
-    }
   </style>
 </head>
 <body>
-  <h1 id="headerTitle">Start Capture :)</h1>
-  <p id="headerDesc">Choose a filter before starting capture!</p>
+  <h1>Start Capture :)</h1>
+  <p>Choose a filter before starting capture!</p>
   <div class="main-container">
     <!-- 左侧：取景和拍摄控制 -->
     <div class="left-panel">
@@ -163,14 +160,14 @@
         <button class="filter-btn" data-filter="pop">Pop</button>
       </div>
       <div class="border-options">
-        <label id="borderStyleLabel">Border Style:
+        <label>Border Style:
           <select id="borderStyle">
             <option value="thin">Thin Border</option>
             <option value="thick">Thick Border</option>
             <option value="3d">3D Border</option>
           </select>
         </label>
-        <label id="borderColorLabel">Border Color:
+        <label>Border Color:
           <select id="borderColor">
             <option value="white">White</option>
             <option value="black">Black</option>
@@ -189,72 +186,19 @@
       <video id="video" autoplay></video>
       <button id="capture" type="button">Start Capture</button>
     </div>
-    <!-- 右侧：拍摄预览、拼贴选项及语言选择 -->
+    <!-- 右侧：拍摄预览和拼贴选项 -->
     <div class="right-panel">
       <div class="photos"></div>
       <div class="layout-options">
-        <p id="layoutTitle">Choose Layout:</p>
+        <p>Choose Layout:</p>
         <button id="layout-2x2" type="button">2x2 Grid</button>
         <button id="layout-1x4" type="button">1x4 Strip</button>
       </div>
       <button id="download" style="display:none;" type="button">Download Photo Strip</button>
-      <div class="language-options">
-        <label id="languageLabel">Language:
-          <select id="languageSelect">
-            <option value="en">English</option>
-            <option value="zh">中文</option>
-          </select>
-        </label>
-      </div>
     </div>
   </div>
   <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
   <script>
-    // 多语言翻译对象
-    const translations = {
-      en: {
-        headerTitle: "Start Capture :)",
-        headerDesc: "Choose a filter before starting capture!",
-        borderStyleLabel: "Border Style:",
-        borderColorLabel: "Border Color:",
-        layoutTitle: "Choose Layout:",
-        layout2x2: "2x2 Grid",
-        layout1x4: "1x4 Strip",
-        download: "Download Photo Strip",
-        capture: "Start Capture"
-      },
-      zh: {
-        headerTitle: "开始拍摄 :)",
-        headerDesc: "开始拍摄前请选择滤镜！",
-        borderStyleLabel: "边框样式：",
-        borderColorLabel: "边框颜色：",
-        layoutTitle: "选择拼贴布局：",
-        layout2x2: "2x2 拼贴",
-        layout1x4: "1x4 拼贴",
-        download: "下载大头贴",
-        capture: "开始拍摄"
-      }
-    };
-
-    function updateLanguage(lang) {
-      document.getElementById("headerTitle").innerText = translations[lang].headerTitle;
-      document.getElementById("headerDesc").innerText = translations[lang].headerDesc;
-      document.getElementById("borderStyleLabel").innerText = translations[lang].borderStyleLabel;
-      document.getElementById("borderColorLabel").innerText = translations[lang].borderColorLabel;
-      document.getElementById("layoutTitle").innerText = translations[lang].layoutTitle;
-      document.getElementById("layout-2x2").innerText = translations[lang].layout2x2;
-      document.getElementById("layout-1x4").innerText = translations[lang].layout1x4;
-      downloadButton.innerText = translations[lang].download;
-      captureButton.innerText = translations[lang].capture;
-    }
-
-    document.getElementById("languageSelect").addEventListener("change", function() {
-      updateLanguage(this.value);
-    });
-
-    // 初始化语言为英文
-    updateLanguage("en");
-
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
@@ -271,7 +215,7 @@
     let borderStyle = borderStyleSelect.value;
     let images = [];
 
-    // 更新取景框（video）的边框效果，实时预览
+    // 更新取景框的边框效果（实时预览）
     function updateVideoBorder() {
       let thickness = 5;
       if (borderStyle === "thick") thickness = 15;
@@ -297,7 +241,7 @@
       .then(stream => { video.srcObject = stream; })
       .catch(err => { console.error("无法访问摄像头: ", err); });
 
-    // 滤镜按钮点击事件，更新视频滤镜并调整按钮反馈
+    // 滤镜按钮点击事件，更新视频滤镜并反馈按钮状态
     filterButtons.forEach(btn => {
       btn.addEventListener('click', function() {
         filterButtons.forEach(b => b.classList.remove('active'));
@@ -332,7 +276,7 @@
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         let img = new Image();
         img.src = canvas.toDataURL('image/png');
-        // 预览图片保持取景框比例，缩小为宽度150px
+        // 预览图片按取景框比例，缩小至宽度150px
         img.style.width = "150px";
         img.style.height = "auto";
         // 设置预览边框样式
@@ -370,41 +314,33 @@
     function createCollage(layout) {
       let collageCanvas = document.createElement('canvas');
       let collageCtx = collageCanvas.getContext('2d');
-      // 使用原始拍摄尺寸 640x480
-      const photoWidth = 640;
-      const photoHeight = 480;
-      
+      // 固定拼贴预览宽度为640，1x4 每个单元格尺寸为 640x480，
+      // 2x2 拼贴每个单元格尺寸按比例调整：宽度320，高度240
       if (layout === '2x2') {
-        // 固定宽度640，2x2中每个单元格宽度=320，高度按比例缩放：320*(480/640)=240
         collageCanvas.width = 640;
-        collageCanvas.height = 240 * 2;  // 480
-        let scale = 320 / 640; // 0.5
+        collageCanvas.height = 480;
         images.forEach((img, index) => {
           let x = (index % 2) * 320;
           let y = Math.floor(index / 2) * 240;
-          // 绘制时将原图缩放至320x240
           collageCtx.drawImage(img, 0, 0, 640, 480, x, y, 320, 240);
-          // 绘制边框
           let thickness = 5;
           if (borderStyle === "thick") thickness = 15;
           else if (borderStyle === "3d") thickness = 10;
-          // 对于2x2，由于缩小了0.5倍，边框也按比例缩小
-          thickness = thickness * 0.5;
+          thickness = thickness * 0.5; // 缩放比例0.5
           collageCtx.lineWidth = thickness;
+          collageCtx.strokeStyle = borderColor;
           if (borderStyle === "3d") {
             collageCtx.shadowColor = "rgba(0,0,0,0.5)";
             collageCtx.shadowBlur = 10;
           }
-          collageCtx.strokeStyle = borderColor;
           collageCtx.strokeRect(x, y, 320, 240);
           if (borderStyle === "3d") {
             collageCtx.shadowColor = "transparent";
           }
         });
       } else if (layout === '1x4') {
-        // 固定宽度640，1x4: 每个单元格宽=640，高度=480
         collageCanvas.width = 640;
-        collageCanvas.height = 480 * 4; // 1920
+        collageCanvas.height = 480 * 4;
         images.forEach((img, index) => {
           let y = index * 480;
           collageCtx.drawImage(img, 0, 0, 640, 480, 0, y, 640, 480);
@@ -412,11 +348,11 @@
           if (borderStyle === "thick") thickness = 15;
           else if (borderStyle === "3d") thickness = 10;
           collageCtx.lineWidth = thickness;
+          collageCtx.strokeStyle = borderColor;
           if (borderStyle === "3d") {
             collageCtx.shadowColor = "rgba(0,0,0,0.5)";
             collageCtx.shadowBlur = 10;
           }
-          collageCtx.strokeStyle = borderColor;
           collageCtx.strokeRect(0, y, 640, 480);
           if (borderStyle === "3d") {
             collageCtx.shadowColor = "transparent";
