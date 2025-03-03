@@ -69,6 +69,10 @@
     button:hover {
       background-color: #0056b3;
     }
+    .filter-btn.active {
+      background-color: #0056b3;
+      box-shadow: 0 0 5px #0056b3;
+    }
     select {
       padding: 8px;
       font-size: 1em;
@@ -76,7 +80,10 @@
       border: 1px solid #ccc;
       margin: 5px;
     }
-    .filters label, .border-options label {
+    .filters button {
+      margin: 5px;
+    }
+    .border-options label {
       margin-right: 10px;
       font-size: 0.9em;
       color: #333;
@@ -89,11 +96,14 @@
       margin-top: 10px;
     }
     .photos img {
+      width: 150px;
+      height: 150px;
       border-radius: 5px;
+      border: 2px solid #ccc;
     }
-    /* 最终拼贴照片预览样式 */
+    /* 最终拼贴照片预览样式，放大显示 */
     .collage-preview {
-      max-width: 400px;
+      max-width: 600px;
       margin-top: 10px;
     }
     .countdown {
@@ -126,15 +136,14 @@
     <!-- 左侧：取景和拍摄控制 -->
     <div class="left-panel">
       <div class="filters">
-        <label><input type="radio" name="filter" value="none" checked> No Filter</label>
-        <label><input type="radio" name="filter" value="grayscale"> Grayscale</label>
-        <label><input type="radio" name="filter" value="sepia"> Sepia</label>
-        <label><input type="radio" name="filter" value="vintage"> Vintage</label>
-        <label><input type="radio" name="filter" value="soft"> Soft</label>
-        <label><input type="radio" name="filter" value="cool"> Cool</label>
-        <label><input type="radio" name="filter" value="warm"> Warm</label>
-        <label><input type="radio" name="filter" value="lomo"> Lomo</label>
-        <label><input type="radio" name="filter" value="pop"> Pop</label>
+        <button class="filter-btn active" data-filter="none">No Filter</button>
+        <button class="filter-btn" data-filter="grayscale">Grayscale</button>
+        <button class="filter-btn" data-filter="sepia">Sepia</button>
+        <button class="filter-btn" data-filter="vintage">Vintage</button>
+        <button class="filter-btn" data-filter="soft">Soft</button>
+        <button class="filter-btn" data-filter="warm">Warm</button>
+        <button class="filter-btn" data-filter="lomo">Lomo</button>
+        <button class="filter-btn" data-filter="pop">Pop</button>
       </div>
       <div class="border-options">
         <label>Border Style:
@@ -187,6 +196,8 @@
     const photosContainer = document.querySelector('.photos');
     const borderColorSelect = document.getElementById('borderColor');
     const borderStyleSelect = document.getElementById('borderStyle');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    
     let filter = "none";
     let borderColor = borderColorSelect.value;
     let borderStyle = borderStyleSelect.value;
@@ -200,16 +211,19 @@
       borderStyle = borderStyleSelect.value;
     });
 
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => { video.srcObject = stream; })
-      .catch(err => { console.error("无法访问摄像头: ", err); });
-
-    document.querySelectorAll('input[name="filter"]').forEach(radio => {
-      radio.addEventListener('change', function() {
-        filter = this.value;
+    // 滤镜按钮点击事件，更新视频滤镜并调整按钮反馈
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        filter = this.getAttribute('data-filter');
         video.style.filter = getFilterCSS(filter);
       });
     });
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => { console.error("无法访问摄像头: ", err); });
 
     function getFilterCSS(filter) {
       switch (filter) {
@@ -217,7 +231,6 @@
         case "sepia": return "sepia(100%)";
         case "vintage": return "contrast(1.2) saturate(0.8) sepia(50%)";
         case "soft": return "blur(2px)";
-        case "cool": return "contrast(1.1) saturate(1.5) hue-rotate(180deg)";
         case "warm": return "contrast(1.1) saturate(1.2) sepia(20%)";
         case "lomo": return "contrast(1.3) saturate(1.8) brightness(0.9)";
         case "pop": return "saturate(2)";
@@ -233,11 +246,14 @@
       // 拍4张照片，每张前有3秒倒计时
       for (let i = 0; i < 4; i++) {
         await countdown(3);
-        // 将滤镜效果应用到 canvas 上
+        // 将滤镜效果应用到canvas上
         ctx.filter = getFilterCSS(filter);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         let img = new Image();
         img.src = canvas.toDataURL('image/png');
+        // 使用之前预览图片尺寸：150x150
+        img.style.width = "150px";
+        img.style.height = "150px";
         // 设置预览边框样式
         let previewThickness = 5;
         if (borderStyle === "thick") previewThickness = 15;
@@ -371,7 +387,7 @@
       }
       const collageImage = new Image();
       collageImage.src = collageCanvas.toDataURL('image/png');
-      // 为了更方便查看，预览时缩小最终拼贴照片
+      // 为了更方便查看，预览时放大最终拼贴照片
       collageImage.className = 'collage-preview';
       photosContainer.innerHTML = '';
       photosContainer.appendChild(collageImage);
