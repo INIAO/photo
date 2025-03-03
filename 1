@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>照相亭</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            height: 100vh;
+        }
+        h1 {
+            color: #333;
+        }
+        video, canvas {
+            border: 2px solid #333;
+            border-radius: 10px;
+            margin: 10px;
+        }
+        #controls {
+            margin-top: 20px;
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #d9534f;
+        }
+        #download {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #5cb85c;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        #download:hover {
+            background-color: #4cae4c;
+        }
+    </style>
+</head>
+<body>
+    <h1>欢迎！每次拍摄有 3 秒时间 – 无法重拍！</h1>
+    <p>此照相亭将连续拍摄 4 张照片，请摆出你最好的姿势，享受乐趣！</p>
+    <video id="video" width="640" height="480" autoplay></video>
+    <div id="controls">
+        <button id="startButton">开始拍摄</button>
+    </div>
+    <div id="message"></div>
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    <a id="download" style="display:none;">下载您的照片</a>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const startButton = document.getElementById('startButton');
+        const message = document.getElementById('message');
+        const downloadLink = document.getElementById('download');
+
+        let photoCount = 0;
+        const totalPhotos = 4;
+        const interval = 3000; // 3 秒
+
+        // 获取用户媒体（摄像头）
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error('无法访问摄像头: ', err);
+            });
+
+        // 开始拍摄
+        startButton.addEventListener('click', () => {
+            photoCount = 0;
+            message.textContent = '';
+            downloadLink.style.display = 'none';
+            startButton.disabled = true;
+            takePhoto();
+        });
+
+        // 拍照函数
+        function takePhoto() {
+            if (photoCount < totalPhotos) {
+                message.textContent = `准备好！${3 - photoCount} 秒后拍摄第 ${photoCount + 1} 张照片！`;
+                setTimeout(() => {
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    photoCount++;
+                    if (photoCount === totalPhotos) {
+                        message.textContent = '拍摄完成！您可以下载您的照片。';
+                        downloadLink.href = canvas.toDataURL('image/png');
+                        downloadLink.download = 'photobooth.png';
+                        downloadLink.style.display = 'block';
+                        startButton.disabled = false;
+                    } else {
+                        takePhoto();
+                    }
+                }, interval);
+            }
+        }
+    </script>
+</body>
+</html>
