@@ -3,106 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>照相亭</title>
+    <title>Photobooth</title>
     <style>
         body {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
             height: 100vh;
-        }
-        h1 {
-            color: #333;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            text-align: center;
         }
         video, canvas {
-            border: 2px solid #333;
+            display: block;
+            margin: 10px auto;
             border-radius: 10px;
-            margin: 10px;
         }
-        #controls {
-            margin-top: 20px;
+        .controls {
+            margin: 10px 0;
         }
-        #message {
-            margin-top: 20px;
-            font-size: 1.2em;
-            color: #d9534f;
-        }
-        #download {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #5cb85c;
-            color: white;
-            text-decoration: none;
+        button {
+            padding: 10px 15px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
             border-radius: 5px;
+            background-color: #007bff;
+            color: white;
         }
-        #download:hover {
-            background-color: #4cae4c;
+        button:hover {
+            background-color: #0056b3;
+        }
+        .filters {
+            margin: 10px;
         }
     </style>
 </head>
 <body>
-    <h1>欢迎！每次拍摄有 3 秒时间 – 无法重拍！</h1>
-    <p>此照相亭将连续拍摄 4 张照片，请摆出你最好的姿势，享受乐趣！</p>
-    <video id="video" width="640" height="480" autoplay></video>
-    <div id="controls">
-        <button id="startButton">开始拍摄</button>
+    <h1>Start Capture :)</h1>
+    <p>Choose a filter before starting capture!</p>
+    <div class="filters">
+        <label><input type="radio" name="filter" value="none" checked> No Filter</label>
+        <label><input type="radio" name="filter" value="grayscale"> Grayscale</label>
+        <label><input type="radio" name="filter" value="sepia"> Sepia</label>
+        <label><input type="radio" name="filter" value="vintage"> Vintage</label>
+        <label><input type="radio" name="filter" value="soft"> Soft</label>
     </div>
-    <div id="message"></div>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button id="capture">Start Capture</button>
     <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
-    <a id="download" style="display:none;">下载您的照片</a>
-
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const context = canvas.getContext('2d');
-        const startButton = document.getElementById('startButton');
-        const message = document.getElementById('message');
-        const downloadLink = document.getElementById('download');
+        const ctx = canvas.getContext('2d');
+        const captureButton = document.getElementById('capture');
+        let filter = "none";
 
-        let photoCount = 0;
-        const totalPhotos = 4;
-        const interval = 3000; // 3 秒
-
-        // 获取用户媒体（摄像头）
+        // 访问摄像头
         navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                video.srcObject = stream;
-            })
-            .catch(err => {
-                console.error('无法访问摄像头: ', err);
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => { console.error("无法访问摄像头: ", err); });
+        
+        // 监听滤镜选择
+        document.querySelectorAll('input[name="filter"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                filter = this.value;
+                video.style.filter = getFilterCSS(filter);
             });
-
-        // 开始拍摄
-        startButton.addEventListener('click', () => {
-            photoCount = 0;
-            message.textContent = '';
-            downloadLink.style.display = 'none';
-            startButton.disabled = true;
-            takePhoto();
         });
 
-        // 拍照函数
-        function takePhoto() {
-            if (photoCount < totalPhotos) {
-                message.textContent = `准备好！${3 - photoCount} 秒后拍摄第 ${photoCount + 1} 张照片！`;
-                setTimeout(() => {
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    photoCount++;
-                    if (photoCount === totalPhotos) {
-                        message.textContent = '拍摄完成！您可以下载您的照片。';
-                        downloadLink.href = canvas.toDataURL('image/png');
-                        downloadLink.download = 'photobooth.png';
-                        downloadLink.style.display = 'block';
-                        startButton.disabled = false;
-                    } else {
-                        takePhoto();
-                    }
-                }, interval);
+        function getFilterCSS(filter) {
+            switch (filter) {
+                case "grayscale": return "grayscale(100%)";
+                case "sepia": return "sepia(100%)";
+                case "vintage": return "contrast(1.2) saturate(0.8) sepia(50%)";
+                case "soft": return "blur(2px)";
+                default: return "none";
             }
+        }
+
+        captureButton.addEventListener('click', async () => {
+            captureButton.disabled = true;
+            let images = [];
+            for (let i = 0; i < 4; i++) { // 4连拍
+                await new Promise(resolve => setTimeout(resolve, 3000)); // 3秒间隔
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let img = new Image();
+                img.src = canvas.toDataURL('image/png');
+                images.push(img);
+            }
+            createCollage(images);
+            captureButton.disabled = false;
+        });
+
+        function createCollage(images) {
+            const collageCanvas = document.createElement('canvas');
+            const ctx = collageCanvas.getContext('2d');
+            collageCanvas.width = 640;
+            collageCanvas.height = 640;
+            
+            images.forEach((img, index) => {
+                let x = (index % 2) * 320;
+                let y = Math.floor(index / 2) * 320;
+                ctx.drawImage(img, x, y, 320, 320);
+            });
+            document.body.appendChild(collageCanvas);
         }
     </script>
 </body>
